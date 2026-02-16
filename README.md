@@ -28,6 +28,7 @@ A Python tool that types text into any active window (VMs, Citrix, Docs, etc.) s
 ### macOS 🍎 / Linux 🐧
 1.  Open Terminal.
 2.  Run: `bash run_gui.sh`
+    -   The script will automatically install required dependencies.
     -   *Note: On macOS, you must grant "Accessibility" permissions to Terminal/Python when prompts appear.*
 
 ---
