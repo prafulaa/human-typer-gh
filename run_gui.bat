@@ -7,10 +7,12 @@ set PYTHON_PATH=%LocalAppData%\Programs\Python\Python314\python.exe
 
 if exist "%PYTHON_PATH%" (
     echo Launching with Python 3.14...
+    "%PYTHON_PATH%" -m pip install -r requirements.txt
     "%PYTHON_PATH%" human_typer_gui.py
 ) else (
     echo Python 3.14 not found in default location.
     echo Trying system PATH...
+    python -m pip install -r requirements.txt
     python human_typer_gui.py
 )
 

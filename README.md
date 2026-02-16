@@ -22,7 +22,8 @@ A Python tool that types text into any active window (VMs, Citrix, Docs, etc.) s
 
 ### Windows 🪟
 1.  **Install Python** (Ensure "Add to PATH" is checked).
-2.  Double-click **`run_gui.bat`** to start.
+3.  **Dependencies**: The script will automatically install required libraries (`pyautogui`, `customtkinter`, etc.) on the first run.
+4.  Double-click **`run_gui.bat`** to start.
 
 ### macOS 🍎 / Linux 🐧
 1.  Open Terminal.
@@ -36,7 +37,7 @@ A Python tool that types text into any active window (VMs, Citrix, Docs, etc.) s
 If you prefer using the command line:
 
 ```bash
-pip install customtkinter pyautogui keyboard
+pip install customtkinter pyautogui keyboard Pillow
 ```
 
 > **Linux users**: You might need: `sudo apt install python3-tk python3-xdotool xdotool`
