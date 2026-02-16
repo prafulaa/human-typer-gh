@@ -4,7 +4,7 @@ A Python tool that types text into any active window (VMs, Citrix, Docs, etc.) s
 
 **Now with a GUI!**
 
-![Human Typer GUI](https://via.placeholder.com/600x400?text=Human+Typer+GUI+Cyberpunk)
+![Human Typer GUI](logo.png)
 
 ---
 
