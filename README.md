@@ -6,6 +6,8 @@ A Python tool that types text into any active window (VMs, Citrix, Docs, etc.) s
 
 ![Human Typer GUI](logo.png)
 
+# HUMAN Typer
+
 ---
 
 ## Features
