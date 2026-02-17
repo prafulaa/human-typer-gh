@@ -2,7 +2,7 @@
   <img src="logo.png" alt="Human Typer Logo" width="200">
   <h1 align="center">HUMAN Typer</h1>
   <p>
-    <b>Cyberpunk Edition</b><br>
+    
     A Python tool that types text into any active window (VMs, Citrix, Docs, etc.) simulating realistic human typing behavior.
   </p>
 </div>
