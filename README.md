@@ -23,12 +23,12 @@
 
 ## Quick Start
 
-### Windows 🪟
+### Windows
 1.  **Install Python** (Ensure "Add to PATH" is checked).
 3.  **Dependencies**: The script will automatically install required libraries (`pyautogui`, `customtkinter`, etc.) on the first run.
 4.  Double-click **`run_gui.bat`** to start.
 
-### macOS 🍎 / Linux 🐧
+### macOS / Linux
 1.  Open Terminal.
 2.  Run: `bash run_gui.sh`
     -   The script will automatically install required dependencies.
