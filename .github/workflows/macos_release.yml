@@ -1,0 +1,102 @@
+name: macOS App Store Release
+
+on:
+  workflow_dispatch: # Allows manual triggering from GitHub Actions tab
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  build_mac_app:
+    name: Build and Package for macOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller Pillow
+
+      - name: Generate macOS ICNS icon
+        run: python create_icon.py
+
+      - name: Build macOS App Bundle with PyInstaller
+        run: pyinstaller HumanTyper.spec --clean
+
+      - name: Install Apple Certificates
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_APP_CERTIFICATE }}
+          P12_PASSWORD: ${{ secrets.MAC_APP_CERTIFICATE_PASSWORD }}
+          INSTALLER_CERTIFICATE_BASE64: ${{ secrets.MAC_INSTALLER_CERTIFICATE }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          INSTALLER_CERT_PATH=$RUNNER_TEMP/installer_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$INSTALLER_CERTIFICATE_BASE64" | base64 --decode -o $INSTALLER_CERT_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificates to keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $INSTALLER_CERT_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # Find Certificate Name
+          # Adjust "Apple Distribution" to your exact certificate name if different. Usually "3rd Party Mac Developer Application: Your Name (TEAMID)"
+          export APP_IDENTITY="3rd Party Mac Developer Application"
+          export INSTALLER_IDENTITY="3rd Party Mac Developer Installer"
+
+      - name: Code Sign App Bundle
+        run: |
+          # The identity name should match the certificate subject name
+          APP_IDENTITY="3rd Party Mac Developer Application"
+          
+          # Sign the inner frameworks first (if any)
+          find "dist/Human Typer.app/Contents/MacOS" -type f -exec codesign --force --sign "$APP_IDENTITY" --entitlements entitlements.plist --options runtime {} \; 
+          find "dist/Human Typer.app/Contents/Frameworks" -type f -exec codesign --force --sign "$APP_IDENTITY" --entitlements entitlements.plist --options runtime {} \;
+          
+          # Sign the main .app bundle
+          codesign --force --sign "$APP_IDENTITY" --entitlements entitlements.plist --options runtime "dist/Human Typer.app"
+          
+          # Verify signature
+          codesign -vvv --deep --strict "dist/Human Typer.app"
+
+      - name: Build PKG Installer
+        run: |
+          INSTALLER_IDENTITY="3rd Party Mac Developer Installer"
+          
+          productbuild --component "dist/Human Typer.app" /Applications --sign "$INSTALLER_IDENTITY" "HumanTyper_macOS.pkg"
+          
+      - name: Upload to App Store Connect
+        env:
+          APP_APPLE_ID: ${{ secrets.APP_APPLE_ID }}
+          ASC_APP_SPECIFIC_PASSWORD: ${{ secrets.ASC_APP_SPECIFIC_PASSWORD }}
+          APPLE_ID_EMAIL: ${{ secrets.APPLE_ID_EMAIL }}
+        run: |
+          # Upload the package to App Store Connect using altool
+          xcrun altool --upload-app -f "HumanTyper_macOS.pkg" -t macos -u "$APPLE_ID_EMAIL" -p "$ASC_APP_SPECIFIC_PASSWORD"
+
+      - name: Upload Artifacts (Fallback)
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-App-Package
+          path: HumanTyper_macOS.pkg

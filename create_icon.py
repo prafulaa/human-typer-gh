@@ -85,9 +85,13 @@ def create_icon():
     ]
     draw.polygon(leaf_pts, fill="white")
     
-    # Save as ICO
+    # Save as ICO (Windows)
     image.save("human_typer_icon.ico", format="ICO", sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])
-    print("Icon created successfully.")
+    
+    # Save as ICNS (macOS)
+    image.save("human_typer_icon.icns", format="ICNS")
+    
+    print("Icons created successfully (.ico and .icns).")
 
 if __name__ == "__main__":
     try:
