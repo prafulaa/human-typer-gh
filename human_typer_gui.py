@@ -180,20 +180,24 @@ class HumanTyperApp(ctk.CTk):
         self.chk_indent = ctk.CTkCheckBox(self.settings_frame, text="Anti-Double Indent", font=self.font_body, 
                                           fg_color=COLOR_PRIMARY, text_color=COLOR_TEXT, hover_color=COLOR_PRIMARY)
         self.chk_indent.pack(side="left", padx=20, pady=10)
-        
-        self.ent_hotkey = ctk.CTkEntry(self.settings_frame, width=80, font=self.font_code, fg_color=COLOR_CARD, text_color=COLOR_TEXT)
-        self.ent_hotkey.insert(0, "ctrl+q")
-        self.ent_hotkey.pack(side="right", padx=20, pady=10)
-        
-        self.lbl_hotkey = ctk.CTkLabel(self.settings_frame, text="Stop Hotkey:", font=self.font_body, text_color=COLOR_TEXT)
-        self.lbl_hotkey.pack(side="right", padx=5)
 
-        # --- START BUTTON ---
-        self.btn_start = ctk.CTkButton(self, text="START SESSION", height=55, corner_radius=27, 
+        # --- BUTTONS ROW: START + STOP ---
+        self.btn_row = ctk.CTkFrame(self, fg_color="transparent")
+        self.btn_row.grid(row=6, column=0, padx=30, pady=10, sticky="ew")
+        self.btn_row.grid_columnconfigure(0, weight=3)
+        self.btn_row.grid_columnconfigure(1, weight=1)
+
+        self.btn_start = ctk.CTkButton(self.btn_row, text="START SESSION", height=55, corner_radius=27,
                                        font=ctk.CTkFont(family=_font_ui, size=16, weight="bold"),
                                        fg_color=COLOR_PRIMARY, hover_color="#4B5A42", text_color="#FFFFFF",
                                        command=self.start_typing_thread)
-        self.btn_start.grid(row=6, column=0, padx=30, pady=10, sticky="ew")
+        self.btn_start.grid(row=0, column=0, padx=(0, 8), sticky="ew")
+
+        self.btn_stop = ctk.CTkButton(self.btn_row, text="STOP", height=55, corner_radius=27,
+                                      font=ctk.CTkFont(family=_font_ui, size=14, weight="bold"),
+                                      fg_color=COLOR_ERROR, hover_color="#B03030", text_color="#FFFFFF",
+                                      command=self.stop_typing, state="disabled")
+        self.btn_stop.grid(row=0, column=1, sticky="ew")
 
         # Footer
         self.lbl_footer = ctk.CTkLabel(self, text="Natural Typing Environment", font=ctk.CTkFont(size=10), text_color=COLOR_MUTED)
@@ -250,40 +254,18 @@ class HumanTyperApp(ctk.CTk):
         text = text.rstrip()
         wpm = int(self.slider_speed.get())
         errors = self.slider_var.get()
-        delay = 5 
+        delay = 5
         suppress_indent = self.chk_indent.get()
-        hotkey_str = self.ent_hotkey.get().strip()
 
         # Update UI state
         self.stop_event.clear()
         self.btn_start.configure(state="disabled", text="RUNNING...", fg_color=COLOR_SECONDARY)
+        self.btn_stop.configure(state="normal")
         self.text_area.configure(state="disabled")
         self.lbl_status_val.configure(text="Initializing...", text_color=COLOR_PRIMARY)
-        self.bar_status.configure(progress_color=COLOR_SECONDARY) 
-        
-        # Hotkey registration (platform-aware)
-        self._hotkey_listener = None
-        try:
-            if IS_MACOS:
-                if pynput_keyboard:
-                    # Convert hotkey string like "ctrl+q" to pynput format "<ctrl>+q"
-                    parts = hotkey_str.lower().split('+')
-                    pynput_combo = '+'.join(
-                        f'<{p.strip()}>' if p.strip() in ('ctrl', 'alt', 'shift', 'cmd') else p.strip()
-                        for p in parts
-                    )
-                    self._hotkey_listener = pynput_keyboard.GlobalHotKeys({
-                        pynput_combo: self.stop_typing
-                    })
-                    self._hotkey_listener.start()
-            else:
-                if keyboard:
-                    keyboard.add_hotkey(hotkey_str, self.stop_typing)
-        except Exception as e:
-            print(f"Hotkey registration error: {e}")
-            self.lbl_status_val.configure(text="Hotkey Error", text_color=COLOR_ERROR)
+        self.bar_status.configure(progress_color=COLOR_SECONDARY)
 
-        self.typing_thread = threading.Thread(target=self.run_typing, args=(text, wpm, errors, delay, suppress_indent, hotkey_str))
+        self.typing_thread = threading.Thread(target=self.run_typing, args=(text, wpm, errors, delay, suppress_indent), daemon=True)
         self.typing_thread.start()
 
     def ui(self, fn):
@@ -295,7 +277,7 @@ class HumanTyperApp(ctk.CTk):
             self.ui(lambda: self.lbl_status_val.configure(text="Stopping...", text_color=COLOR_ERROR))
             self.stop_event.set()
 
-    def run_typing(self, text, wpm, errors, delay, suppress_indent, hotkey_str):
+    def run_typing(self, text, wpm, errors, delay, suppress_indent):
         # Countdown - all UI updates go through self.ui() for macOS thread safety
         for i in range(delay, 0, -1):
             if self.stop_event.is_set(): break
@@ -316,17 +298,7 @@ class HumanTyperApp(ctk.CTk):
             # Run the typing engine
             human_typer.type_text(text, wpm=wpm, error_rate=errors, start_delay=0, stop_event=self.stop_event, suppress_indent=suppress_indent)
         
-        # Cleanup hotkey
-        try:
-            if IS_MACOS:
-                if self._hotkey_listener:
-                    self._hotkey_listener.stop()
-                    self._hotkey_listener = None
-            else:
-                if keyboard:
-                    keyboard.remove_hotkey(hotkey_str)
-        except:
-            pass
+        # Cleanup - no hotkey to remove (using in-app STOP button)
 
         # Reset UI on the main thread
         is_stopped = self.stop_event.is_set()
@@ -335,7 +307,8 @@ class HumanTyperApp(ctk.CTk):
                 text="Aborted" if stopped else "Completed",
                 text_color=COLOR_ERROR if stopped else COLOR_PRIMARY
             ),
-            self.btn_start.configure(state="normal", text="\u25b6  START SESSION", fg_color=COLOR_PRIMARY),
+            self.btn_start.configure(state="normal", text="START SESSION", fg_color=COLOR_PRIMARY),
+            self.btn_stop.configure(state="disabled"),
             self.text_area.configure(state="normal"),
             self.bar_status.set(0),
             self.bar_status.configure(progress_color=COLOR_PRIMARY)
