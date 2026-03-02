@@ -75,7 +75,7 @@ class HumanTyperApp(ctk.CTk):
         self.header_frame.grid(row=0, column=0, padx=20, pady=(25, 15), sticky="ew")
         
         # Icon 
-        self.icon_label = ctk.CTkLabel(self.header_frame, text="🌿", font=ctk.CTkFont(size=32), text_color=COLOR_PRIMARY)
+        self.icon_label = ctk.CTkLabel(self.header_frame, text="HT", font=ctk.CTkFont(size=26, weight="bold"), text_color=COLOR_PRIMARY)
         self.icon_label.pack(side="left", padx=(0, 10))
         
         # Title Stack
@@ -93,13 +93,13 @@ class HumanTyperApp(ctk.CTk):
 
         # Theme Toggle
         self.theme_mode = "Light"
-        self.theme_btn = ctk.CTkButton(self.btn_stack, text="🌙", width=40, height=40, font=ctk.CTkFont(size=20),
-                                          fg_color=COLOR_CARD, text_color=COLOR_TEXT, hover_color=COLOR_TRACK, corner_radius=20, command=self.toggle_theme)
+        self.theme_btn = ctk.CTkButton(self.btn_stack, text="Dark", width=50, height=36, font=ctk.CTkFont(size=12),
+                                          fg_color=COLOR_CARD, text_color=COLOR_TEXT, hover_color=COLOR_TRACK, corner_radius=18, command=self.toggle_theme)
         self.theme_btn.pack(side="right", padx=(5, 0))
 
         # Settings Button
-        self.settings_btn = ctk.CTkButton(self.btn_stack, text="⚙️", width=40, height=40, font=ctk.CTkFont(size=20),
-                                          fg_color=COLOR_CARD, text_color=COLOR_TEXT, hover_color=COLOR_TRACK, corner_radius=20, command=self.toggle_settings)
+        self.settings_btn = ctk.CTkButton(self.btn_stack, text="Settings", width=60, height=36, font=ctk.CTkFont(size=11),
+                                          fg_color=COLOR_CARD, text_color=COLOR_TEXT, hover_color=COLOR_TRACK, corner_radius=18, command=self.toggle_settings)
         self.settings_btn.pack(side="right")
 
         # --- STATUS CARDS ROW ---
@@ -146,10 +146,10 @@ class HumanTyperApp(ctk.CTk):
         self.controls_card.grid(row=4, column=0, padx=20, pady=25, sticky="ew")
         
         # Speed Slider
-        self.lbl_speed_icon = ctk.CTkLabel(self.controls_card, text="⚡ Flow Speed", font=self.font_label, text_color=COLOR_TEXT)
+        self.lbl_speed_icon = ctk.CTkLabel(self.controls_card, text="Flow Speed", font=self.font_label, text_color=COLOR_TEXT)
         self.lbl_speed_icon.grid(row=0, column=0, padx=20, pady=(20, 5), sticky="w")
         
-        self.lbl_speed_val = ctk.CTkLabel(self.controls_card, text="70 WPM", font=ctk.CTkFont(family="Roboto", size=12), text_color=COLOR_MUTED, fg_color=COLOR_TRACK, corner_radius=6)
+        self.lbl_speed_val = ctk.CTkLabel(self.controls_card, text="70 WPM", font=self.font_body, text_color=COLOR_MUTED, fg_color=COLOR_TRACK, corner_radius=6)
         self.lbl_speed_val.grid(row=0, column=1, padx=20, pady=(20, 5), sticky="e")
 
         self.slider_speed = ctk.CTkSlider(self.controls_card, from_=30, to=150, number_of_steps=24, 
@@ -160,10 +160,10 @@ class HumanTyperApp(ctk.CTk):
         self.slider_speed.configure(command=self.update_speed_label)
 
         # Variation Slider (Error Rate)
-        self.lbl_var_icon = ctk.CTkLabel(self.controls_card, text="🌲 Natural Variation", font=self.font_label, text_color=COLOR_TEXT)
+        self.lbl_var_icon = ctk.CTkLabel(self.controls_card, text="Natural Variation", font=self.font_label, text_color=COLOR_TEXT)
         self.lbl_var_icon.grid(row=2, column=0, padx=20, pady=(5, 5), sticky="w")
 
-        self.lbl_var_val = ctk.CTkLabel(self.controls_card, text="6.0 %", font=ctk.CTkFont(family="Roboto", size=12), text_color=COLOR_MUTED, fg_color=COLOR_TRACK, corner_radius=6)
+        self.lbl_var_val = ctk.CTkLabel(self.controls_card, text="6.0 %", font=self.font_body, text_color=COLOR_MUTED, fg_color=COLOR_TRACK, corner_radius=6)
         self.lbl_var_val.grid(row=2, column=1, padx=20, pady=(5, 5), sticky="e")
 
         self.slider_var = ctk.CTkSlider(self.controls_card, from_=0, to=0.20, number_of_steps=20,
@@ -189,14 +189,14 @@ class HumanTyperApp(ctk.CTk):
         self.lbl_hotkey.pack(side="right", padx=5)
 
         # --- START BUTTON ---
-        self.btn_start = ctk.CTkButton(self, text="▶  START SESSION", height=55, corner_radius=27, 
-                                       font=ctk.CTkFont(family="Roboto", size=16, weight="bold"),
+        self.btn_start = ctk.CTkButton(self, text="START SESSION", height=55, corner_radius=27, 
+                                       font=ctk.CTkFont(family=_font_ui, size=16, weight="bold"),
                                        fg_color=COLOR_PRIMARY, hover_color="#4B5A42", text_color="#FFFFFF",
                                        command=self.start_typing_thread)
         self.btn_start.grid(row=6, column=0, padx=30, pady=10, sticky="ew")
 
         # Footer
-        self.lbl_footer = ctk.CTkLabel(self, text="🌷 Natural Typing Environment", font=ctk.CTkFont(size=10), text_color=COLOR_MUTED)
+        self.lbl_footer = ctk.CTkLabel(self, text="Natural Typing Environment", font=ctk.CTkFont(size=10), text_color=COLOR_MUTED)
         self.lbl_footer.grid(row=7, column=0, pady=(10, 20))
 
         # Logic
@@ -207,17 +207,17 @@ class HumanTyperApp(ctk.CTk):
         if self.theme_mode == "Light":
             ctk.set_appearance_mode("Dark")
             self.theme_mode = "Dark"
-            self.theme_btn.configure(text="☀️")
+            self.theme_btn.configure(text="Light")
             self.subtitle_label.configure(text="Forest Mode v2.0")
-            self.icon_label.configure(text="🌲")
-            self.lbl_footer.configure(text="🌲 Deep Forest Environment")
+            self.icon_label.configure(text="HT")
+            self.lbl_footer.configure(text="Deep Forest Environment")
         else:
             ctk.set_appearance_mode("Light")
             self.theme_mode = "Light"
-            self.theme_btn.configure(text="🌙")
+            self.theme_btn.configure(text="Dark")
             self.subtitle_label.configure(text="Natural Flow v2.0")
-            self.icon_label.configure(text="🌿")
-            self.lbl_footer.configure(text="🌷 Natural Typing Environment")
+            self.icon_label.configure(text="HT")
+            self.lbl_footer.configure(text="Natural Typing Environment")
 
     def toggle_settings(self):
         if not self.settings_visible:
