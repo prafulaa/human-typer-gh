@@ -1,8 +1,27 @@
 import customtkinter as ctk
 import threading
 import time
+import sys
+import platform
 import human_typer  # Import the logic from the CLI script
-import keyboard
+
+# Platform-aware hotkey handling
+# `keyboard` requires root on macOS; `pynput` works with Accessibility permissions
+IS_MACOS = sys.platform == "darwin"
+
+if IS_MACOS:
+    try:
+        from pynput import keyboard as pynput_keyboard
+    except ImportError:
+        pynput_keyboard = None
+        print("WARNING: pynput not installed. Stop hotkey will not work on macOS.")
+        print("Install it with: pip3 install pynput")
+else:
+    try:
+        import keyboard
+    except ImportError:
+        keyboard = None
+        print("WARNING: keyboard not installed. Stop hotkey will not work.")
 
 # Theme Definitions (Light, Dark)
 # Light = Natural Flow (Cream/Sage)
@@ -236,10 +255,26 @@ class HumanTyperApp(ctk.CTk):
         self.lbl_status_val.configure(text="Initializing...", text_color=COLOR_PRIMARY)
         self.bar_status.configure(progress_color=COLOR_SECONDARY) 
         
-        # Hotkey registration
+        # Hotkey registration (platform-aware)
+        self._hotkey_listener = None
         try:
-            keyboard.add_hotkey(hotkey_str, self.stop_typing)
-        except:
+            if IS_MACOS:
+                if pynput_keyboard:
+                    # Convert hotkey string like "ctrl+q" to pynput format "<ctrl>+q"
+                    parts = hotkey_str.lower().split('+')
+                    pynput_combo = '+'.join(
+                        f'<{p.strip()}>' if p.strip() in ('ctrl', 'alt', 'shift', 'cmd') else p.strip()
+                        for p in parts
+                    )
+                    self._hotkey_listener = pynput_keyboard.GlobalHotKeys({
+                        pynput_combo: self.stop_typing
+                    })
+                    self._hotkey_listener.start()
+            else:
+                if keyboard:
+                    keyboard.add_hotkey(hotkey_str, self.stop_typing)
+        except Exception as e:
+            print(f"Hotkey registration error: {e}")
             self.lbl_status_val.configure(text="Hotkey Error", text_color=COLOR_ERROR)
 
         self.typing_thread = threading.Thread(target=self.run_typing, args=(text, wpm, errors, delay, suppress_indent, hotkey_str))
@@ -266,9 +301,17 @@ class HumanTyperApp(ctk.CTk):
             # Since we don't track progress % in human_typer, we just run it
             human_typer.type_text(text, wpm=wpm, error_rate=errors, start_delay=0, stop_event=self.stop_event, suppress_indent=suppress_indent)
         
-        # Cleanup
-        try: keyboard.remove_hotkey(hotkey_str)
-        except: pass
+        # Cleanup hotkey
+        try:
+            if IS_MACOS:
+                if self._hotkey_listener:
+                    self._hotkey_listener.stop()
+                    self._hotkey_listener = None
+            else:
+                if keyboard:
+                    keyboard.remove_hotkey(hotkey_str)
+        except:
+            pass
 
         # Reset UI
         is_stopped = self.stop_event.is_set()
