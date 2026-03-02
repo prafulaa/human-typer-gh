@@ -36,6 +36,10 @@ COLOR_MUTED = ("#8A9485", "#6E8B76")    # Muted Green / Forest Gray
 COLOR_ERROR = ("#D9534F", "#FF5252")    # Soft Red / Neon Red
 COLOR_TRACK = ("#E0E0E0", "#2C3E30")    # Light Gray / Darker Jungle
 
+# MUST be set before creating any CTk window — fixes black window on macOS
+ctk.set_appearance_mode("Light")
+ctk.set_default_color_theme("green")
+
 class HumanTyperApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -44,14 +48,14 @@ class HumanTyperApp(ctk.CTk):
         self.geometry("450x780") 
         self.resizable(False, True)
         
-        # Icon
-        try:
-            self.iconbitmap("human_typer_icon.ico")
-        except:
-            pass 
+        # Icon (Windows only — .ico not supported on macOS)
+        if not IS_MACOS:
+            try:
+                self.iconbitmap("human_typer_icon.ico")
+            except:
+                pass
 
-        # Default Theme
-        ctk.set_appearance_mode("Light") 
+        # Apply background color (appearance mode already set at module level)
         self.configure(fg_color=COLOR_BG)
         
         # Fonts
@@ -322,5 +326,9 @@ class HumanTyperApp(ctk.CTk):
         self.bar_status.configure(progress_color=COLOR_PRIMARY)
 
 if __name__ == "__main__":
+    import os
+    if IS_MACOS:
+        # Suppress the deprecated Tk warning on macOS
+        os.environ["TK_SILENCE_DEPRECATION"] = "1"
     app = HumanTyperApp()
     app.mainloop()
