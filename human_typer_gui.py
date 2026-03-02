@@ -58,12 +58,14 @@ class HumanTyperApp(ctk.CTk):
         # Apply background color (appearance mode already set at module level)
         self.configure(fg_color=COLOR_BG)
         
-        # Fonts
-        self.font_header = ctk.CTkFont(family="Roboto", size=22, weight="bold")
-        self.font_sub = ctk.CTkFont(family="Roboto", size=13)
-        self.font_label = ctk.CTkFont(family="Roboto", size=14, weight="bold")
-        self.font_body = ctk.CTkFont(family="Roboto", size=12)
-        self.font_code = ctk.CTkFont(family="Consolas", size=12)
+        # Fonts - use cross-platform safe fonts (Roboto not installed on macOS)
+        _font_ui = "SF Pro Display" if IS_MACOS else "Segoe UI"
+        _font_mono = "Menlo" if IS_MACOS else "Consolas"
+        self.font_header = ctk.CTkFont(family=_font_ui, size=22, weight="bold")
+        self.font_sub = ctk.CTkFont(family=_font_ui, size=13)
+        self.font_label = ctk.CTkFont(family=_font_ui, size=14, weight="bold")
+        self.font_body = ctk.CTkFont(family=_font_ui, size=12)
+        self.font_code = ctk.CTkFont(family=_font_mono, size=12)
 
         # GRID SETUP
         self.grid_columnconfigure(0, weight=1)
@@ -284,25 +286,34 @@ class HumanTyperApp(ctk.CTk):
         self.typing_thread = threading.Thread(target=self.run_typing, args=(text, wpm, errors, delay, suppress_indent, hotkey_str))
         self.typing_thread.start()
 
+    def ui(self, fn):
+        """Schedule a UI update on the main thread (required on macOS)."""
+        self.after(0, fn)
+
     def stop_typing(self):
         if self.typing_thread and self.typing_thread.is_alive():
-            self.lbl_status_val.configure(text="Stopping...", text_color=COLOR_ERROR)
+            self.ui(lambda: self.lbl_status_val.configure(text="Stopping...", text_color=COLOR_ERROR))
             self.stop_event.set()
 
     def run_typing(self, text, wpm, errors, delay, suppress_indent, hotkey_str):
-        # Countdown
+        # Countdown - all UI updates go through self.ui() for macOS thread safety
         for i in range(delay, 0, -1):
             if self.stop_event.is_set(): break
-            self.lbl_status_val.configure(text=f"Click Window: {i}s", text_color=COLOR_SECONDARY)
-            self.bar_status.set(1.0 - (i/delay))
+            _i = i  # capture loop var
+            self.ui(lambda i=_i: (
+                self.lbl_status_val.configure(text=f"Click Window: {i}s", text_color=COLOR_SECONDARY),
+                self.bar_status.set(1.0 - (i/delay))
+            ))
             time.sleep(1)
         
         if not self.stop_event.is_set():
-            self.lbl_status_val.configure(text="Injecting...", text_color=COLOR_PRIMARY)
-            self.bar_status.configure(progress_color=COLOR_PRIMARY)
-            self.bar_status.set(0) 
+            self.ui(lambda: (
+                self.lbl_status_val.configure(text="Injecting...", text_color=COLOR_PRIMARY),
+                self.bar_status.configure(progress_color=COLOR_PRIMARY),
+                self.bar_status.set(0)
+            ))
             
-            # Since we don't track progress % in human_typer, we just run it
+            # Run the typing engine
             human_typer.type_text(text, wpm=wpm, error_rate=errors, start_delay=0, stop_event=self.stop_event, suppress_indent=suppress_indent)
         
         # Cleanup hotkey
@@ -317,13 +328,18 @@ class HumanTyperApp(ctk.CTk):
         except:
             pass
 
-        # Reset UI
+        # Reset UI on the main thread
         is_stopped = self.stop_event.is_set()
-        self.lbl_status_val.configure(text="Aborted" if is_stopped else "Completed", text_color=COLOR_ERROR if is_stopped else COLOR_PRIMARY)
-        self.btn_start.configure(state="normal", text="▶  START SESSION", fg_color=COLOR_PRIMARY)
-        self.text_area.configure(state="normal")
-        self.bar_status.set(0)
-        self.bar_status.configure(progress_color=COLOR_PRIMARY)
+        self.ui(lambda stopped=is_stopped: (
+            self.lbl_status_val.configure(
+                text="Aborted" if stopped else "Completed",
+                text_color=COLOR_ERROR if stopped else COLOR_PRIMARY
+            ),
+            self.btn_start.configure(state="normal", text="\u25b6  START SESSION", fg_color=COLOR_PRIMARY),
+            self.text_area.configure(state="normal"),
+            self.bar_status.set(0),
+            self.bar_status.configure(progress_color=COLOR_PRIMARY)
+        ))
 
 if __name__ == "__main__":
     import os
