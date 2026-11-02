@@ -6,15 +6,19 @@ REM Also falls back to system PATH
 set PYTHON_PATH=%LocalAppData%\Programs\Python\Python314\python.exe
 
 if exist "%PYTHON_PATH%" (
-    echo Launching with Python 3.14...
-    "%PYTHON_PATH%" -m pip install -r requirements.txt
-    "%PYTHON_PATH%" human_typer_gui.py
+    set PY=%PYTHON_PATH%
 ) else (
-    echo Python 3.14 not found in default location.
-    echo Trying system PATH...
-    python -m pip install -r requirements.txt
-    python human_typer_gui.py
+    set PY=python
 )
+
+REM Only install dependencies if they are actually missing (fast start)
+"%PY%" -c "import customtkinter, pyautogui, PIL" 2>nul
+if errorlevel 1 (
+    echo Installing dependencies...
+    "%PY%" -m pip install -r requirements.txt
+)
+
+"%PY%" human_typer_gui.py
 
 if %errorlevel% neq 0 (
     echo.

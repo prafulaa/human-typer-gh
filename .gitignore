@@ -32,7 +32,21 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# NOTE: HumanTyper.spec is the app's build definition and IS tracked.
+# Only ignore unrelated generated specs if any appear.
+/*.spec
+!HumanTyper.spec
+
+# Installer packages / large binaries (keep them out of history)
+*.msix
+*.exe
+*.dmg
+*.pkg
+dmg_temp/
+
+# Local tooling dirs
+.v2c/
+.video_agent/
 
 # Installer logs
 pip-log.txt

@@ -1,5 +1,4 @@
 customtkinter
 pyautogui
-keyboard
-pynput
 Pillow
+keyboard; sys_platform == "win32"
